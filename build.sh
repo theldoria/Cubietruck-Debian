@@ -4,7 +4,7 @@ VERSION="CTDebian 1.8"
 SOURCE_COMPILE="yes"
 DEST_LANG="en_US"
 DEST_LANGUAGE="en"
-DEST=/tmp/Cubie
+DEST=$(pwd)/tmp/output
 ROOTPWD="1234"
 # --- End -----------------------------------------------------------------------
 SRC=$(pwd)
