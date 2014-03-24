@@ -11,7 +11,7 @@ SRC=$(pwd)
 set -e
 
 # optimize build time
-CPUS=$(grep -c 'processor' /proc/cpuinfo) 
+CPUS=$(grep -c 'processor' /proc/cpuinfo)
 
 CTHREADS="-j$(($CPUS + $CPUS/2))" # 100% cpu usage
 #CTHREADS="-j${CPUS}"
@@ -74,8 +74,11 @@ fi
 #patch -f $DEST/linux-sunxi/drivers/gpio/gpio-sunxi.c < $SRC/patch/gpio.patch || true
 
 # Applying Patch for high load. Could cause troubles with USB OTG port
-sed -e 's/usb_detect_type     = 1/usb_detect_type     = 0/g' -i $DEST/cubie_configs/sysconfig/linux/cubietruck.fex 
+sed -e 's/usb_detect_type     = 1/usb_detect_type     = 0/g' -i $DEST/cubie_configs/sysconfig/linux/cubietruck.fex
 sed -e 's/usb_detect_type     = 1/usb_detect_type     = 0/g' -i $DEST/cubie_configs/sysconfig/linux/cubieboard2.fex
+
+# Change green led to disk activity
+sed -e 's/leds_trigger_4 = "mmc0"/leds_trigger_4 = "disk-activity"/g' -i $DEST/cubie_configs/sysconfig/linux/cubietruck.fex
 
 # Prepare fex files for VGA & HDMI
 sed -e 's/screen0_output_type.*/screen0_output_type     = 3/g' $DEST/cubie_configs/sysconfig/linux/cubietruck.fex > $DEST/cubie_configs/sysconfig/linux/ct-hdmi.fex
@@ -110,7 +113,7 @@ cd $DEST/linux-sunxi
 make clean
 
 # Adding wlan firmware to kernel source
-cd $DEST/linux-sunxi/firmware; 
+cd $DEST/linux-sunxi/firmware;
 unzip -o $SRC/bin/ap6210.zip
 cd $DEST/linux-sunxi
 
@@ -156,7 +159,7 @@ mkfs.ext4 $LOOP
 # tune filesystem
 tune2fs -o journal_data_writeback $LOOP
 
-# create mount point and mount image 
+# create mount point and mount image
 mkdir -p $DEST/output/sdcard/
 mount -t ext4 $LOOP $DEST/output/sdcard/
 mount
@@ -170,7 +173,7 @@ cp /usr/bin/qemu-arm-static $DEST/output/sdcard/usr/bin/
 test -e /proc/sys/fs/binfmt_misc/qemu-arm || update-binfmts --enable qemu-arm
 # mount proc inside chroot
 mount -t proc chproc $DEST/output/sdcard/proc
-# second stage unmounts proc 
+# second stage unmounts proc
 chroot $DEST/output/sdcard /bin/bash -c "/debootstrap/debootstrap --second-stage"
 # mount proc, sys and dev
 mount -t proc chproc $DEST/output/sdcard/proc
@@ -201,7 +204,7 @@ EOT
 
 # update
 chroot $DEST/output/sdcard /bin/bash -c "apt-get update"
-chroot $DEST/output/sdcard /bin/bash -c "export LANG=C"    
+chroot $DEST/output/sdcard /bin/bash -c "export LANG=C"
 
 # set up 'apt
 cat <<END > $DEST/output/sdcard/etc/apt/apt.conf.d/71-no-recommends
@@ -215,7 +218,7 @@ cp $SRC/scripts/disable_led.sh $DEST/output/sdcard/etc/init.d/disable_led.sh
 # make it executable
 chroot $DEST/output/sdcard /bin/bash -c "chmod +x /etc/init.d/disable_led.sh"
 # and startable on boot
-chroot $DEST/output/sdcard /bin/bash -c "update-rc.d disable_led.sh defaults" 
+chroot $DEST/output/sdcard /bin/bash -c "update-rc.d disable_led.sh defaults"
 
 # scripts for autoresize at first boot from cubian
 cd $DEST/output/sdcard/etc/init.d
@@ -234,15 +237,15 @@ cp $SRC/scripts/bashrc $DEST/output/sdcard/root/.bashrc
 # make it executable
 chroot $DEST/output/sdcard /bin/bash -c "chmod +x /etc/init.d/cubian-*"
 # and startable on boot
-chroot $DEST/output/sdcard /bin/bash -c "update-rc.d cubian-firstrun defaults" 
+chroot $DEST/output/sdcard /bin/bash -c "update-rc.d cubian-firstrun defaults"
 # install and configure locales
 chroot $DEST/output/sdcard /bin/bash -c "apt-get -qq -y install locales"
 # reconfigure locales
-echo -e $DEST_LANG'.UTF-8 UTF-8\n' > $DEST/output/sdcard/etc/locale.gen 
+echo -e $DEST_LANG'.UTF-8 UTF-8\n' > $DEST/output/sdcard/etc/locale.gen
 chroot $DEST/output/sdcard /bin/bash -c "locale-gen"
 echo -e 'LANG="'$DEST_LANG'.UTF-8"\nLANGUAGE="'$DEST_LANG':'$DEST_LANGUAGE'"\n' > $DEST/output/sdcard/etc/default/locale
 chroot $DEST/output/sdcard /bin/bash -c "export LANG=$DEST_LANG.UTF-8"
-chroot $DEST/output/sdcard /bin/bash -c "apt-get -qq -y install sysfsutils hddtemp bc figlet toilet screen hdparm libfuse2 ntfs-3g bash-completion lsof console-data sudo git hostapd dosfstools htop openssh-server ca-certificates module-init-tools dhcp3-client udev ifupdown iproute iputils-ping ntpdate ntp rsync usbutils uboot-envtools pciutils wireless-tools wpasupplicant procps libnl-dev parted cpufrequtils console-setup unzip bridge-utils" 
+chroot $DEST/output/sdcard /bin/bash -c "apt-get -qq -y install sysfsutils hddtemp bc figlet toilet screen hdparm libfuse2 ntfs-3g bash-completion lsof console-data sudo git hostapd dosfstools htop openssh-server ca-certificates module-init-tools dhcp3-client udev ifupdown iproute iputils-ping ntpdate ntp rsync usbutils uboot-envtools pciutils wireless-tools wpasupplicant procps libnl-dev parted cpufrequtils console-setup unzip bridge-utils"
 chroot $DEST/output/sdcard /bin/bash -c "apt-get -qq -y upgrade"
 
 # change dynamic motd
@@ -253,17 +256,17 @@ ZAMENJAJ=$ZAMENJAJ"\n   else"
 ZAMENJAJ=$ZAMENJAJ"\n           toilet -f standard -F metal  \"Cubieboard\" >> /var/run/motd.dynamic"
 ZAMENJAJ=$ZAMENJAJ"\n   fi"
 ZAMENJAJ=$ZAMENJAJ"\n   echo \"\" >> /var/run/motd.dynamic"
-sed -e s,"# Update motd","$ZAMENJAJ",g 	-i $DEST/output/sdcard/etc/init.d/motd
+sed -e s,"# Update motd","$ZAMENJAJ",g    -i $DEST/output/sdcard/etc/init.d/motd
 sed -e s,"uname -snrvm > /var/run/motd.dynamic","",g  -i $DEST/output/sdcard/etc/init.d/motd
 
 # ramlog
 chroot $DEST/output/sdcard /bin/bash -c "dpkg -i /tmp/ramlog_2.0.0_all.deb"
 sed -e 's/TMPFS_RAMFS_SIZE=/TMPFS_RAMFS_SIZE=256m/g' -i $DEST/output/sdcard/etc/default/ramlog
-sed -e 's/# Required-Start:    $remote_fs $time/# Required-Start:    $remote_fs $time ramlog/g' -i $DEST/output/sdcard/etc/init.d/rsyslog 
-sed -e 's/# Required-Stop:     umountnfs $time/# Required-Stop:     umountnfs $time ramlog/g' -i $DEST/output/sdcard/etc/init.d/rsyslog   
+sed -e 's/# Required-Start:    $remote_fs $time/# Required-Start:    $remote_fs $time ramlog/g' -i $DEST/output/sdcard/etc/init.d/rsyslog
+sed -e 's/# Required-Stop:     umountnfs $time/# Required-Stop:     umountnfs $time ramlog/g' -i $DEST/output/sdcard/etc/init.d/rsyslog
 
 # console
-chroot $DEST/output/sdcard /bin/bash -c "export TERM=linux" 
+chroot $DEST/output/sdcard /bin/bash -c "export TERM=linux"
 
 # configure MIN / MAX Speed for cpufrequtils
 sed -e 's/MIN_SPEED="0"/MIN_SPEED="480000"/g' -i $DEST/output/sdcard/etc/init.d/cpufrequtils
@@ -271,10 +274,12 @@ sed -e 's/MAX_SPEED="0"/MAX_SPEED="1200000"/g' -i $DEST/output/sdcard/etc/init.d
 sed -e 's/ondemand/interactive/g' -i $DEST/output/sdcard/etc/init.d/cpufrequtils
 
 # set password to 1234
-chroot $DEST/output/sdcard /bin/bash -c "(echo $ROOTPWD;echo $ROOTPWD;) | passwd root" 
+chroot $DEST/output/sdcard /bin/bash -c "(echo $ROOTPWD;echo $ROOTPWD;) | passwd root"
 
-# set hostname 
+# set hostname
 echo cubie > $DEST/output/sdcard/etc/hostname
+# add hostname to known host list
+sed -e s,"localhost","localhost $DEST",g -i $DEST/output/sdcard/etc/hosts
 
 # change default I/O scheduler, noop for flash media, cfq for mechanical drive
 cat <<EOT >> $DEST/output/sdcard/etc/sysfs.conf
@@ -303,7 +308,7 @@ iface eth0 inet dhcp
 #auto wlan0
 #allow-hotplug wlan0
 #iface wlan0 inet dhcp
-#    wpa-ssid SSID 
+#    wpa-ssid SSID
 #    wpa-psk xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # to generate proper encrypted key: wpa_passphrase yourSSID yourpassword
 EOT
@@ -330,10 +335,10 @@ echo "/dev/mmcblk0p1  /           ext4    defaults,noatime,nodiratime,data=write
 
 # flash media tunning
 sed -e 's/#RAMTMP=no/RAMTMP=yes/g' -i $DEST/output/sdcard/etc/default/tmpfs
-sed -e 's/#RUN_SIZE=10%/RUN_SIZE=128M/g' -i $DEST/output/sdcard/etc/default/tmpfs 
-sed -e 's/#LOCK_SIZE=/LOCK_SIZE=/g' -i $DEST/output/sdcard/etc/default/tmpfs 
-sed -e 's/#SHM_SIZE=/SHM_SIZE=128M/g' -i $DEST/output/sdcard/etc/default/tmpfs 
-sed -e 's/#TMP_SIZE=/TMP_SIZE=1G/g' -i $DEST/output/sdcard/etc/default/tmpfs 
+sed -e 's/#RUN_SIZE=10%/RUN_SIZE=128M/g' -i $DEST/output/sdcard/etc/default/tmpfs
+sed -e 's/#LOCK_SIZE=/LOCK_SIZE=/g' -i $DEST/output/sdcard/etc/default/tmpfs
+sed -e 's/#SHM_SIZE=/SHM_SIZE=128M/g' -i $DEST/output/sdcard/etc/default/tmpfs
+sed -e 's/#TMP_SIZE=/TMP_SIZE=1G/g' -i $DEST/output/sdcard/etc/default/tmpfs
 
 # enable serial console (Debian/sysvinit way)
 echo T0:2345:respawn:/sbin/getty -L ttyS0 115200 vt100 >> $DEST/output/sdcard/etc/inittab
@@ -358,8 +363,8 @@ sed -e 's/%STUBNAME_TAG%/tusbd/g' $DEST/usb-redirector-linux-arm-eabi/files/rc.u
 sed -e 's/%DAEMONNAME_TAG%/usbsrvd/g' $DEST/usb-redirector-linux-arm-eabi/files/rc.usbsrvd1 > $DEST/usb-redirector-linux-arm-eabi/files/rc.usbsrvd
 chmod +x $DEST/usb-redirector-linux-arm-eabi/files/rc.usbsrvd
 # copy to root
-cp $DEST/usb-redirector-linux-arm-eabi/files/usb* $DEST/output/sdcard/usr/local/bin/ 
-cp $DEST/usb-redirector-linux-arm-eabi/files/modules/src/tusbd/tusbd.ko $DEST/output/sdcard/usr/local/bin/ 
+cp $DEST/usb-redirector-linux-arm-eabi/files/usb* $DEST/output/sdcard/usr/local/bin/
+cp $DEST/usb-redirector-linux-arm-eabi/files/modules/src/tusbd/tusbd.ko $DEST/output/sdcard/usr/local/bin/
 cp $DEST/usb-redirector-linux-arm-eabi/files/rc.usbsrvd $DEST/output/sdcard/etc/init.d/
 # not started by default ----- update.rc rc.usbsrvd defaults
 # chroot $DEST/output/sdcard /bin/bash -c "update-rc.d rc.usbsrvd defaults"
@@ -373,21 +378,21 @@ cp $SRC/config/hostapd.conf $DEST/output/sdcard/etc/
 # sunxi-tools
 cd $DEST/sunxi-tools
 make clean && make $CTHREADS 'fex2bin' CC=arm-linux-gnueabihf-gcc && make $CTHREADS 'bin2fex' CC=arm-linux-gnueabihf-gcc && make $CTHREADS 'nand-part' CC=arm-linux-gnueabihf-gcc
-cp fex2bin $DEST/output/sdcard/usr/bin/ 
+cp fex2bin $DEST/output/sdcard/usr/bin/
 cp bin2fex $DEST/output/sdcard/usr/bin/
 cp nand-part $DEST/output/sdcard/usr/bin/
 sync
 sleep 5
-# cleanup 
+# cleanup
 # unmount proc, sys and dev from chroot
 umount $DEST/output/sdcard/dev/pts
 umount $DEST/output/sdcard/dev
 umount $DEST/output/sdcard/proc
 umount $DEST/output/sdcard/sys
 
-rm $DEST/output/sdcard/usr/bin/qemu-arm-static 
-# umount images 
-umount $DEST/output/sdcard/ 
+rm $DEST/output/sdcard/usr/bin/qemu-arm-static
+# umount images
+umount $DEST/output/sdcard/
 losetup -d $LOOP
 
 # let's create nice file name
@@ -406,7 +411,7 @@ losetup -o 1048576 $LOOP $DEST/output/debian_rootfs.raw
 mount $LOOP $DEST/output/sdcard/
 sed -e 's/ct-hdmi.bin/ct-vga.bin/g' -i $DEST/output/sdcard/boot/uEnv.ct
 sed -e 's/cb2-hdmi.bin/cb2-vga.bin/g' -i $DEST/output/sdcard/boot/uEnv.cb2
-umount $DEST/output/sdcard/ 
+umount $DEST/output/sdcard/
 losetup -d $LOOP
 mv $DEST/output/debian_rootfs.raw $DEST/output/$VGA.raw
 cd $DEST/output/
